@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MEG Image Uploader</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: #0d0d0d;
+      color: #e0e0e0;
+      font-family: 'Courier New', monospace;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 40px 16px;
+    }
+
+    h1 {
+      font-size: 1.4rem;
+      letter-spacing: 0.2em;
+      color: #c8ff00;
+      text-transform: uppercase;
+      margin-bottom: 4px;
+    }
+
+    .sub {
+      font-size: 0.75rem;
+      color: #555;
+      margin-bottom: 32px;
+      letter-spacing: 0.1em;
+    }
+
+    .card {
+      background: #141414;
+      border: 1px solid #222;
+      border-radius: 8px;
+      padding: 24px;
+      width: 100%;
+      max-width: 480px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    label {
+      font-size: 0.7rem;
+      letter-spacing: 0.12em;
+      color: #666;
+      text-transform: uppercase;
+      display: block;
+      margin-bottom: 6px;
+    }
+
+    input[type="text"], input[type="password"] {
+      width: 100%;
+      background: #0d0d0d;
+      border: 1px solid #2a2a2a;
+      border-radius: 4px;
+      color: #e0e0e0;
+      font-family: 'Courier New', monospace;
+      font-size: 0.85rem;
+      padding: 10px 12px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    input[type="text"]:focus, input[type="password"]:focus {
+      border-color: #c8ff00;
+    }
+
+    .drop-zone {
+      border: 2px dashed #2a2a2a;
+      border-radius: 6px;
+      padding: 32px 16px;
+      text-align: center;
+      cursor: pointer;
+      transition: border-color 0.2s, background 0.2s;
+      position: relative;
+    }
+
+    .drop-zone:hover, .drop-zone.drag-over {
+      border-color: #c8ff00;
+      background: #161600;
+    }
+
+    .drop-zone input[type="file"] {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      cursor: pointer;
+      width: 100%;
+      height: 100%;
+    }
+
+    .drop-icon { font-size: 2rem; margin-bottom: 8px; }
+    .drop-text { font-size: 0.8rem; color: #555; }
+    .drop-text span { color: #c8ff00; }
+
+    #preview-area {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .preview-item {
+      position: relative;
+      width: 80px;
+      height: 80px;
+    }
+
+    .preview-item img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      border-radius: 4px;
+      border: 1px solid #2a2a2a;
+    }
+
+    .preview-item .remove-btn {
+      position: absolute;
+      top: -6px;
+      right: -6px;
+      background: #ff3b3b;
+      color: white;
+      border: none;
+      border-radius: 50%;
+      width: 18px;
+      height: 18px;
+      font-size: 10px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .preview-item .fname {
+      font-size: 9px;
+      color: #555;
+      text-align: center;
+      margin-top: 2px;
+      word-break: break-all;
+      max-width: 80px;
+    }
+
+    button.upload-btn {
+      background: #c8ff00;
+      color: #0d0d0d;
+      font-family: 'Courier New', monospace;
+      font-weight: bold;
+      font-size: 0.85rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      border: none;
+      border-radius: 4px;
+      padding: 12px;
+      cursor: pointer;
+      transition: opacity 0.2s;
+    }
+
+    button.upload-btn:disabled {
+      opacity: 0.3;
+      cursor: not-allowed;
+    }
+
+    #log {
+      font-size: 0.75rem;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      max-height: 200px;
+      overflow-y: auto;
+    }
+
+    .log-item {
+      padding: 8px 10px;
+      border-radius: 4px;
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      word-break: break-all;
+    }
+
+    .log-item.success { background: #0a1a00; border-left: 3px solid #c8ff00; }
+    .log-item.error { background: #1a0000; border-left: 3px solid #ff3b3b; color: #ff7070; }
+    .log-item.info { background: #0d0d0d; border-left: 3px solid #444; color: #666; }
+
+    .log-item a {
+      color: #c8ff00;
+      text-decoration: none;
+      word-break: break-all;
+    }
+
+    .divider {
+      border: none;
+      border-top: 1px solid #1e1e1e;
+    }
+
+    .folder-row {
+      display: flex;
+      gap: 8px;
+      align-items: flex-end;
+    }
+
+    .folder-row > div { flex: 1; }
+
+    .hint { font-size: 0.7rem; color: #444; margin-top: 4px; }
+  </style>
+</head>
+<body>
+
+<h1>MEG Image Uploader</h1>
+<p class="sub">github cdn · nuxmeg-max/image-meg</p>
+
+<div class="card">
+
+  <!-- Token -->
+  <div>
+    <label>GitHub Token</label>
+    <input type="password" id="token" placeholder="ghp_xxxxxxxxxxxxxx" />
+    <p class="hint">Settings → Developer settings → Personal access tokens → repo scope</p>
+  </div>
+
+  <hr class="divider">
+
+  <!-- Folder -->
+  <div>
+    <label>Folder tujuan di repo</label>
+    <input type="text" id="folder" value="public/image" placeholder="public/image" />
+    <p class="hint">Sesuaikan jika folder berbeda</p>
+  </div>
+
+  <hr class="divider">
+
+  <!-- Drop zone -->
+  <div>
+    <label>Pilih Foto</label>
+    <div class="drop-zone" id="dropZone">
+      <input type="file" id="fileInput" accept="image/*" multiple />
+      <div class="drop-icon">📁</div>
+      <p class="drop-text">Drop foto di sini atau <span>klik untuk pilih</span></p>
+    </div>
+  </div>
+
+  <!-- Preview -->
+  <div id="preview-area"></div>
+
+  <!-- Upload button -->
+  <button class="upload-btn" id="uploadBtn" disabled onclick="uploadAll()">Upload ke GitHub</button>
+
+  <!-- Log -->
+  <div id="log"></div>
+
+</div>
+
+<script>
+  const OWNER = 'nuxmeg-max';
+  const REPO  = 'image-meg';
+
+  let selectedFiles = [];
+
+  const fileInput   = document.getElementById('fileInput');
+  const dropZone    = document.getElementById('dropZone');
+  const previewArea = document.getElementById('preview-area');
+  const uploadBtn   = document.getElementById('uploadBtn');
+  const log         = document.getElementById('log');
+
+  fileInput.addEventListener('change', e => handleFiles(e.target.files));
+
+  dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
+  dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
+  dropZone.addEventListener('drop', e => {
+    e.preventDefault();
+    dropZone.classList.remove('drag-over');
+    handleFiles(e.dataTransfer.files);
+  });
+
+  function handleFiles(files) {
+    for (const file of files) {
+      if (!file.type.startsWith('image/')) continue;
+      selectedFiles.push(file);
+      renderPreview(file, selectedFiles.length - 1);
+    }
+    uploadBtn.disabled = selectedFiles.length === 0;
+  }
+
+  function renderPreview(file, idx) {
+    const reader = new FileReader();
+    reader.onload = e => {
+      const wrap = document.createElement('div');
+      wrap.className = 'preview-item';
+      wrap.dataset.idx = idx;
+      wrap.innerHTML = `
+        <img src="${e.target.result}" />
+        <button class="remove-btn" onclick="removeFile(${idx})">✕</button>
+        <p class="fname">${file.name}</p>
+      `;
+      previewArea.appendChild(wrap);
+    };
+    reader.readAsDataURL(file);
+  }
+
+  function removeFile(idx) {
+    selectedFiles[idx] = null;
+    const el = previewArea.querySelector(`[data-idx="${idx}"]`);
+    if (el) el.remove();
+    uploadBtn.disabled = selectedFiles.filter(Boolean).length === 0;
+  }
+
+  function addLog(type, msg, url = null) {
+    const div = document.createElement('div');
+    div.className = `log-item ${type}`;
+    div.innerHTML = url
+      ? `<span>✓</span><span>${msg} → <a href="${url}" target="_blank">${url}</a></span>`
+      : `<span>${type === 'success' ? '✓' : type === 'error' ? '✗' : '·'}</span><span>${msg}</span>`;
+    log.appendChild(div);
+    log.scrollTop = log.scrollHeight;
+  }
+
+  async function toBase64(file) {
+    return new Promise((res, rej) => {
+      const r = new FileReader();
+      r.onload = () => res(r.result.split(',')[1]);
+      r.onerror = rej;
+      r.readAsDataURL(file);
+    });
+  }
+
+  async function uploadAll() {
+    const token  = document.getElementById('token').value.trim();
+    const folder = document.getElementById('folder').value.trim().replace(/^\/|\/$/g, '');
+
+    if (!token) { addLog('error', 'Token GitHub belum diisi!'); return; }
+
+    const files = selectedFiles.filter(Boolean);
+    if (!files.length) { addLog('error', 'Tidak ada foto dipilih.'); return; }
+
+    uploadBtn.disabled = true;
+    uploadBtn.textContent = 'Uploading...';
+
+    for (const file of files) {
+      addLog('info', `Mengupload ${file.name}...`);
+      try {
+        const base64 = await toBase64(file);
+        const path   = `${folder}/${file.name}`;
+        const url    = `https://api.github.com/repos/${OWNER}/${REPO}/contents/${path}`;
+
+        // Cek apakah file sudah ada (untuk dapat SHA)
+        let sha = null;
+        try {
+          const check = await fetch(url, {
+            headers: { Authorization: `token ${token}`, Accept: 'application/vnd.github.v3+json' }
+          });
+          if (check.ok) {
+            const data = await check.json();
+            sha = data.sha;
+          }
+        } catch (_) {}
+
+        const body = { message: `Upload ${file.name}`, content: base64 };
+        if (sha) body.sha = sha;
+
+        const res = await fetch(url, {
+          method: 'PUT',
+          headers: {
+            Authorization: `token ${token}`,
+            Accept: 'application/vnd.github.v3+json',
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(body)
+        });
+
+        if (res.ok) {
+          const imgUrl = `https://cdn.megdigital.my.id/${folder.replace('public/', '')}/${file.name}`;
+          addLog('success', file.name, imgUrl);
+        } else {
+          const err = await res.json();
+          addLog('error', `${file.name}: ${err.message}`);
+        }
+      } catch (e) {
+        addLog('error', `${file.name}: ${e.message}`);
+      }
+    }
+
+    uploadBtn.disabled = false;
+    uploadBtn.textContent = 'Upload ke GitHub';
+    selectedFiles = [];
+    previewArea.innerHTML = '';
+    fileInput.value = '';
+  }
+</script>
+</body>
+</html>
+
